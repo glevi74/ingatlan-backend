@@ -1,0 +1,22 @@
+target/
+*.class
+*.jar
+
+# JWT privát kulcs — soha ne kerüljön fel!
+src/main/resources/privateKey.pem
+src/main/resources/testPrivateKey.pem
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Maven wrapper (ha nincs)
+!.mvn/wrapper/maven-wrapper.jar
+
+# OS
+.DS_Store
+Thumbs.db
