@@ -9,6 +9,7 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
@@ -19,11 +20,29 @@ public class DataInitializer {
 
     @Inject FelhasznaloRepository felhasznaloRepository;
     @Inject IrodaRepository irodaRepository;
+    @Inject EntityManager em;
 
     @Transactional
     public void onStart(@Observes StartupEvent ev) {
+        fixSzerepConstraint();
         initIroda();
         initAdmin();
+    }
+
+    /**
+     * A Hibernate "update" módban nem frissíti az enum CHECK constraint-eket.
+     * Ha a szerep enum értékei változtak (pl. UGYNOK → REFERENS/ASSZISZTENS),
+     * az elavult constraint törlése szükséges, különben az insert 500-as hibával fail-el.
+     */
+    private void fixSzerepConstraint() {
+        try {
+            em.createNativeQuery(
+                    "ALTER TABLE felhasznalok DROP CONSTRAINT IF EXISTS felhasznalok_szerep_check"
+            ).executeUpdate();
+            LOG.debug("felhasznalok_szerep_check constraint eltávolítva (ha létezett).");
+        } catch (Exception ex) {
+            LOG.warnf("Nem sikerült törölni a szerep CHECK constraint-et: %s", ex.getMessage());
+        }
     }
 
     private void initIroda() {

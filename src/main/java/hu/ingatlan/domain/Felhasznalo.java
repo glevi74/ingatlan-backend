@@ -30,7 +30,7 @@ public class Felhasznalo extends PanacheEntityBase {
     public String jelszoHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(50)")
     public FelhasznaloSzerep szerep;
 
     /** null = ADMIN (rendszer-szintű, nem tartozik irodához) */
