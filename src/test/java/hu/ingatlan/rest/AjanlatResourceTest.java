@@ -7,6 +7,7 @@ import hu.ingatlan.repository.AjanlatRepository;
 import hu.ingatlan.repository.IngatlanRepository;
 import hu.ingatlan.repository.MegbizasRepository;
 import hu.ingatlan.repository.UgyfelRepository;
+import hu.ingatlan.service.TestIrodaContext;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -42,18 +43,21 @@ class AjanlatResourceTest {
         u.nev = "Ajanlat Teszt Eladó";
         u.email = "ajanlat.teszt." + UUID.randomUUID() + "@test.hu";
         u.szerep = Ugyfel.UgyfelSzerep.ELADO;
+        u.irodaId = TestIrodaContext.TEST_IRODA_ID;
         ugyfelRepo.persist(u);
         ugyfelId = u.id.toString();
 
         Ingatlan i = new Ingatlan();
         i.cim = "Ajanlat Teszt Cím";
         i.tipus = Ingatlan.IngatlanTipus.LAKAS;
+        i.irodaId = TestIrodaContext.TEST_IRODA_ID;
         ingatlanRepo.persist(i);
 
         Megbizas m = new Megbizas();
         m.ugyfel = u;
         m.ingatlan = i;
         m.tipus = Megbizas.MegbizasTipus.KIZAROLAGOS;
+        m.irodaId = TestIrodaContext.TEST_IRODA_ID;
         megbizasRepo.persist(m);
         megbizasId = m.id.toString();
     }
