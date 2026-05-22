@@ -26,17 +26,32 @@ public class AjanlatService {
     @Inject IrodaContext ctx;
 
     public List<AjanlatDto.Response> listAll() {
-        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+        }
+        return repository.listByIroda(irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<AjanlatDto.Response> findByMegbizas(UUID megbizasId) {
-        return repository.findByMegbizasAndIroda(megbizasId, ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            return repository.findByMegbizas(megbizasId).stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
+        return repository.findByMegbizasAndIroda(megbizasId, irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<AjanlatDto.Response> findByUgyfel(UUID ugyfelId) {
-        return repository.findByUgyfelAndIroda(ugyfelId, ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            return repository.findByUgyfel(ugyfelId).stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
+        return repository.findByUgyfelAndIroda(ugyfelId, irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
@@ -68,7 +83,7 @@ public class AjanlatService {
     @Transactional
     public AjanlatDto.Response update(UUID id, AjanlatDto.Request dto) {
         Ajanlat a = getOrThrow(id);
-        UUID irodaId = ctx.irodaIdOrThrow();
+        UUID irodaId = ctx.irodaId() != null ? ctx.irodaId() : a.irodaId;
 
         if (!a.megbizas.id.equals(dto.getMegbizasId())) {
             Megbizas megbizas = megbizasRepository.findById(dto.getMegbizasId());
@@ -108,7 +123,11 @@ public class AjanlatService {
         }
 
         // A többi ajánlat elutasítása ugyanarra a megbízásra
-        repository.findByMegbizasAndIroda(elfogadott.megbizas.id, ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        (irodaId == null
+            ? repository.findByMegbizas(elfogadott.megbizas.id)
+            : repository.findByMegbizasAndIroda(elfogadott.megbizas.id, irodaId)
+        ).stream()
                 .filter(a -> !a.id.equals(id))
                 .filter(a -> a.status == Ajanlat.AjanlatStatus.BEERKEZETT
                         || a.status == Ajanlat.AjanlatStatus.TARGYALASBAN)
@@ -143,6 +162,7 @@ public class AjanlatService {
     AjanlatDto.Response toResponse(Ajanlat a) {
         AjanlatDto.Response r = new AjanlatDto.Response();
         r.setId(a.id);
+        r.setIrodaId(a.irodaId);
         r.setMegbizasId(a.megbizas.id);
         r.setIngatlanCim(a.megbizas.ingatlan.cim);
         r.setUgyfelId(a.ugyfel.id);

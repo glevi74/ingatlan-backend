@@ -9,6 +9,7 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
@@ -19,11 +20,48 @@ public class DataInitializer {
 
     @Inject FelhasznaloRepository felhasznaloRepository;
     @Inject IrodaRepository irodaRepository;
+    @Inject EntityManager em;
 
     @Transactional
     public void onStart(@Observes StartupEvent ev) {
+        fixSzerepConstraint();
+        fixHelyrajziSzamEmpty();
         initIroda();
         initAdmin();
+    }
+
+    /**
+     * A Hibernate "update" módban nem frissíti az enum CHECK constraint-eket.
+     * Ha a szerep enum értékei változtak (pl. UGYNOK → REFERENS/ASSZISZTENS),
+     * az elavult constraint törlése szükséges, különben az insert 500-as hibával fail-el.
+     */
+    private void fixSzerepConstraint() {
+        try {
+            em.createNativeQuery(
+                    "ALTER TABLE felhasznalok DROP CONSTRAINT IF EXISTS felhasznalok_szerep_check"
+            ).executeUpdate();
+            LOG.debug("felhasznalok_szerep_check constraint eltávolítva (ha létezett).");
+        } catch (Exception ex) {
+            LOG.warnf("Nem sikerült törölni a szerep CHECK constraint-et: %s", ex.getMessage());
+        }
+    }
+
+    /**
+     * Korábbi verziókban az üres cím ("") helyrajzi_szam-ként kerülhetett a DB-be.
+     * PostgreSQL a UNIQUE constraint-nél az üres stringet értékként kezeli → duplikált sorokat blokkol.
+     * Induláskor az üres stringeket NULL-ra alakítjuk.
+     */
+    private void fixHelyrajziSzamEmpty() {
+        try {
+            int updated = em.createNativeQuery(
+                    "UPDATE ingatlanok SET helyrajzi_szam = NULL WHERE helyrajzi_szam = ''"
+            ).executeUpdate();
+            if (updated > 0) {
+                LOG.infof("fixHelyrajziSzam: %d sor helyrajzi_szam mezője NULL-ra javítva.", updated);
+            }
+        } catch (Exception ex) {
+            LOG.warnf("fixHelyrajziSzam: nem sikerült: %s", ex.getMessage());
+        }
     }
 
     private void initIroda() {

@@ -22,17 +22,32 @@ public class HirdetesService {
     @Inject IrodaContext ctx;
 
     public List<HirdetesDto.Response> listAll() {
-        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+        }
+        return repository.listByIroda(irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<HirdetesDto.Response> listAktivak() {
-        return repository.findAktivakByIroda(ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            return repository.findAktivak().stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
+        return repository.findAktivakByIroda(irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<HirdetesDto.Response> findByMegbizas(UUID megbizasId) {
-        return repository.findByMegbizasAndIroda(megbizasId, ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            return repository.findByMegbizas(megbizasId).stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
+        return repository.findByMegbizasAndIroda(megbizasId, irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
@@ -58,7 +73,7 @@ public class HirdetesService {
     @Transactional
     public HirdetesDto.Response update(UUID id, HirdetesDto.Request dto) {
         Hirdetes h = getOrThrow(id);
-        UUID irodaId = ctx.irodaIdOrThrow();
+        UUID irodaId = ctx.irodaId() != null ? ctx.irodaId() : h.irodaId;
 
         if (!h.megbizas.id.equals(dto.getMegbizasId())) {
             Megbizas megbizas = megbizasRepository.findById(dto.getMegbizasId());
@@ -108,6 +123,7 @@ public class HirdetesService {
     private HirdetesDto.Response toResponse(Hirdetes h) {
         HirdetesDto.Response r = new HirdetesDto.Response();
         r.setId(h.id);
+        r.setIrodaId(h.irodaId);
         r.setMegbizasId(h.megbizas.id);
         r.setIngatlanCim(h.megbizas.ingatlan.cim);
         r.setKerAr(h.kerAr);

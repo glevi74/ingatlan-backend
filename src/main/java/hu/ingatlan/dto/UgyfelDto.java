@@ -31,6 +31,7 @@ public class UgyfelDto {
     @Data
     public static class Response {
         public UUID id;
+        public UUID irodaId;
         public String nev;
         public String email;
         public String telefon;

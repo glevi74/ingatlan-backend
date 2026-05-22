@@ -61,6 +61,7 @@ public class AuthService {
 
         AuthDto.TokenResponse r = new AuthDto.TokenResponse();
         r.setToken(token);
+        r.setId(f.id);
         r.setFelhasznalonev(f.felhasznalonev);
         r.setNev(f.nev != null ? f.nev : f.felhasznalonev);
         r.setSzerep(f.szerep);

@@ -26,4 +26,13 @@ public class HirdetesRepository implements PanacheRepositoryBase<Hirdetes, UUID>
                 Sort.by("letrehozva").descending(),
                 Parameters.with("irodaId", irodaId).and("status", Hirdetes.HirdetesStatus.AKTIV));
     }
+
+    // ADMIN-variánsok: iroda-szűrés nélkül
+    public List<Hirdetes> findAktivak() {
+        return list("status", Sort.by("letrehozva").descending(), Hirdetes.HirdetesStatus.AKTIV);
+    }
+
+    public List<Hirdetes> findByMegbizas(UUID megbizasId) {
+        return list("megbizas.id", megbizasId);
+    }
 }

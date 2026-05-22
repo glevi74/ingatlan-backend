@@ -60,11 +60,28 @@ public class Feladat extends PanacheEntityBase {
     @Column(name = "modositva")
     public LocalDateTime modositva;
 
+    // ── Opcionális entitás-hivatkozás ─────────────────────────────────────
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kapcsolt_tipus")
+    public KapcsoltTipus kapcsoltTipus;
+
+    @Column(name = "kapcsolt_id", columnDefinition = "uuid")
+    public UUID kapcsoltId;
+
+    /** Gyorsítótárazott megjelenítési név */
+    @Column(name = "kapcsolt_nev")
+    public String kapcsoltNev;
+
     public enum FeladatStatus {
         NYITOTT, FOLYAMATBAN, KESZ, MEGHIUSULT
     }
 
     public enum FeladatPrioritas {
         ALACSONY, NORMAL, MAGAS, SURGOS
+    }
+
+    public enum KapcsoltTipus {
+        INGATLAN, UGYFEL, MEGBIZAS
     }
 }

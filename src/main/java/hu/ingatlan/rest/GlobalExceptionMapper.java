@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -14,6 +15,8 @@ import java.util.stream.Collectors;
 
 @Provider
 public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
+
+    private static final Logger LOG = Logger.getLogger(GlobalExceptionMapper.class);
 
     @Override
     public Response toResponse(Exception e) {
@@ -30,6 +33,7 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
                     .collect(Collectors.joining(", "));
             return error(Response.Status.BAD_REQUEST, "Validációs hiba: " + details);
         }
+        LOG.errorf(e, "Belső szerverhiba: %s", e.getMessage());
         return error(Response.Status.INTERNAL_SERVER_ERROR,
                 "Belső szerverhiba: " + e.getMessage());
     }

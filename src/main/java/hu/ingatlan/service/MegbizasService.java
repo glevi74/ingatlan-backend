@@ -25,22 +25,42 @@ public class MegbizasService {
     @Inject IrodaContext ctx;
 
     public List<MegbizasDto.Response> listAll() {
-        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+        }
+        return repository.listByIroda(irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> listAktivak() {
-        return repository.findAktivakByIroda(ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            return repository.findAktivak().stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
+        return repository.findAktivakByIroda(irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> findByUgyfel(UUID ugyfelId) {
-        return repository.findByUgyfelAndIroda(ugyfelId, ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            return repository.findByUgyfel(ugyfelId).stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
+        return repository.findByUgyfelAndIroda(ugyfelId, irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> findByIngatlan(UUID ingatlanId) {
-        return repository.findByIngatlanAndIroda(ingatlanId, ctx.irodaIdOrThrow()).stream()
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            return repository.findByIngatlan(ingatlanId).stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
+        return repository.findByIngatlanAndIroda(ingatlanId, irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
@@ -72,7 +92,7 @@ public class MegbizasService {
     @Transactional
     public MegbizasDto.Response update(UUID id, MegbizasDto.Request dto) {
         Megbizas m = getOrThrow(id);
-        UUID irodaId = ctx.irodaIdOrThrow();
+        UUID irodaId = ctx.irodaId() != null ? ctx.irodaId() : m.irodaId;
 
         if (!m.ugyfel.id.equals(dto.getUgyfelId())) {
             Ugyfel ugyfel = ugyfelRepository.findById(dto.getUgyfelId());
@@ -121,6 +141,7 @@ public class MegbizasService {
     private MegbizasDto.Response toResponse(Megbizas m) {
         MegbizasDto.Response r = new MegbizasDto.Response();
         r.setId(m.id);
+        r.setIrodaId(m.irodaId);
         r.setUgyfelId(m.ugyfel.id);
         r.setUgyfelNev(m.ugyfel.nev);
         r.setIngatlanId(m.ingatlan.id);

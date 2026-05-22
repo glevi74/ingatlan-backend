@@ -31,4 +31,17 @@ public class MegbizasRepository implements PanacheRepositoryBase<Megbizas, UUID>
         return list("ingatlan.id = :ingatlanId AND irodaId = :irodaId",
                 Parameters.with("ingatlanId", ingatlanId).and("irodaId", irodaId));
     }
+
+    // ADMIN-variánsok: iroda-szűrés nélkül
+    public List<Megbizas> findAktivak() {
+        return list("status", Sort.by("letrehozva").descending(), Megbizas.MegbizasStatus.AKTIV);
+    }
+
+    public List<Megbizas> findByUgyfel(UUID ugyfelId) {
+        return list("ugyfel.id", ugyfelId);
+    }
+
+    public List<Megbizas> findByIngatlan(UUID ingatlanId) {
+        return list("ingatlan.id", ingatlanId);
+    }
 }
