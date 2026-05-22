@@ -18,14 +18,18 @@ public class IngatlanService {
     @Inject
     IngatlanRepository repository;
 
+    @Inject
+    IrodaContext ctx;
+
     public List<IngatlanDto.Response> listAll() {
-        return repository.listAll().stream()
+        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     public List<IngatlanDto.Response> search(IngatlanDto.SearchParams params) {
         return repository.search(
+                ctx.irodaIdOrThrow(),
                 params.getTipus(),
                 params.getMinAlapterulet(),
                 params.getMaxAlapterulet(),
@@ -40,6 +44,7 @@ public class IngatlanService {
     @Transactional
     public IngatlanDto.Response create(IngatlanDto.Request dto) {
         Ingatlan i = new Ingatlan();
+        i.irodaId = ctx.irodaIdOrThrow();
         applyDto(i, dto);
         repository.persist(i);
         return toResponse(i);
@@ -74,6 +79,11 @@ public class IngatlanService {
     private Ingatlan getOrThrow(UUID id) {
         Ingatlan i = repository.findById(id);
         if (i == null) throw new NotFoundException("Ingatlan nem található: " + id);
+        // Iroda-ellenőrzés: csak saját iroda adatát láthatja
+        UUID irodaId = ctx.irodaId();
+        if (irodaId != null && !irodaId.equals(i.irodaId)) {
+            throw new NotFoundException("Ingatlan nem található: " + id);
+        }
         return i;
     }
 

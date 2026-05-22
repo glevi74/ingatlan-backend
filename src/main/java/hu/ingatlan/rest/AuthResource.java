@@ -22,15 +22,15 @@ public class AuthResource {
 
     @POST
     @Path("/bejelentkezes")
-    @Operation(summary = "Bejelentkezés — JWT tokent ad vissza")
+    @Operation(summary = "Bejelentkezés — JWT tokent ad vissza iroda adatokkal együtt")
     public AuthDto.TokenResponse bejelentkezes(@Valid AuthDto.BejelentkezesRequest req) {
         return service.bejelentkezes(req);
     }
 
     @POST
     @Path("/regisztracio")
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Új felhasználó regisztrálása (csak ADMIN)")
+    @RolesAllowed({"ADMIN", "IRODAVEZETO"})
+    @Operation(summary = "Új felhasználó regisztrálása — ADMIN: bármely irodába, IRODAVEZETO: csak saját irodájába")
     public Response regisztracio(@Valid AuthDto.RegisztracioRequest req) {
         service.regisztracio(req);
         return Response.status(Response.Status.CREATED).build();

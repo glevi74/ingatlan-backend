@@ -19,37 +19,29 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class MegbizasService {
 
-    @Inject
-    MegbizasRepository repository;
-
-    @Inject
-    UgyfelRepository ugyfelRepository;
-
-    @Inject
-    IngatlanRepository ingatlanRepository;
+    @Inject MegbizasRepository repository;
+    @Inject UgyfelRepository ugyfelRepository;
+    @Inject IngatlanRepository ingatlanRepository;
+    @Inject IrodaContext ctx;
 
     public List<MegbizasDto.Response> listAll() {
-        return repository.listAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> listAktivak() {
-        return repository.findAktivak().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.findAktivakByIroda(ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> findByUgyfel(UUID ugyfelId) {
-        return repository.findByUgyfel(ugyfelId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.findByUgyfelAndIroda(ugyfelId, ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> findByIngatlan(UUID ingatlanId) {
-        return repository.findByIngatlan(ingatlanId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.findByIngatlanAndIroda(ingatlanId, ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public MegbizasDto.Response findById(UUID id) {
@@ -58,13 +50,18 @@ public class MegbizasService {
 
     @Transactional
     public MegbizasDto.Response create(MegbizasDto.Request dto) {
+        UUID irodaId = ctx.irodaIdOrThrow();
+
         Ugyfel ugyfel = ugyfelRepository.findById(dto.getUgyfelId());
-        if (ugyfel == null) throw new NotFoundException("Ügyfél nem található: " + dto.getUgyfelId());
+        if (ugyfel == null || !irodaId.equals(ugyfel.irodaId))
+            throw new NotFoundException("Ügyfél nem található: " + dto.getUgyfelId());
 
         Ingatlan ingatlan = ingatlanRepository.findById(dto.getIngatlanId());
-        if (ingatlan == null) throw new NotFoundException("Ingatlan nem található: " + dto.getIngatlanId());
+        if (ingatlan == null || !irodaId.equals(ingatlan.irodaId))
+            throw new NotFoundException("Ingatlan nem található: " + dto.getIngatlanId());
 
         Megbizas m = new Megbizas();
+        m.irodaId = irodaId;
         m.ugyfel = ugyfel;
         m.ingatlan = ingatlan;
         applyDto(m, dto);
@@ -75,15 +72,18 @@ public class MegbizasService {
     @Transactional
     public MegbizasDto.Response update(UUID id, MegbizasDto.Request dto) {
         Megbizas m = getOrThrow(id);
+        UUID irodaId = ctx.irodaIdOrThrow();
 
         if (!m.ugyfel.id.equals(dto.getUgyfelId())) {
             Ugyfel ugyfel = ugyfelRepository.findById(dto.getUgyfelId());
-            if (ugyfel == null) throw new NotFoundException("Ügyfél nem található: " + dto.getUgyfelId());
+            if (ugyfel == null || !irodaId.equals(ugyfel.irodaId))
+                throw new NotFoundException("Ügyfél nem található: " + dto.getUgyfelId());
             m.ugyfel = ugyfel;
         }
         if (!m.ingatlan.id.equals(dto.getIngatlanId())) {
             Ingatlan ingatlan = ingatlanRepository.findById(dto.getIngatlanId());
-            if (ingatlan == null) throw new NotFoundException("Ingatlan nem található: " + dto.getIngatlanId());
+            if (ingatlan == null || !irodaId.equals(ingatlan.irodaId))
+                throw new NotFoundException("Ingatlan nem található: " + dto.getIngatlanId());
             m.ingatlan = ingatlan;
         }
         applyDto(m, dto);
@@ -112,6 +112,9 @@ public class MegbizasService {
     private Megbizas getOrThrow(UUID id) {
         Megbizas m = repository.findById(id);
         if (m == null) throw new NotFoundException("Megbízás nem található: " + id);
+        UUID irodaId = ctx.irodaId();
+        if (irodaId != null && !irodaId.equals(m.irodaId))
+            throw new NotFoundException("Megbízás nem található: " + id);
         return m;
     }
 

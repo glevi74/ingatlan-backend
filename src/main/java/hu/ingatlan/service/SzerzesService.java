@@ -18,16 +18,13 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class SzerzesService {
 
-    @Inject
-    SzerzesRepository repository;
-
-    @Inject
-    AjanlatRepository ajanlatRepository;
+    @Inject SzerzesRepository repository;
+    @Inject AjanlatRepository ajanlatRepository;
+    @Inject IrodaContext ctx;
 
     public List<SzerzesDto.Response> listAll() {
-        return repository.listAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public SzerzesDto.Response findById(UUID id) {
@@ -35,24 +32,28 @@ public class SzerzesService {
     }
 
     public SzerzesDto.Response findByAjanlat(UUID ajanlatId) {
-        return repository.findByAjanlat(ajanlatId)
+        return repository.findByAjanlatAndIroda(ajanlatId, ctx.irodaIdOrThrow())
                 .map(this::toResponse)
                 .orElseThrow(() -> new NotFoundException("Szerzés nem található ehhez az ajánlathoz: " + ajanlatId));
     }
 
     @Transactional
     public SzerzesDto.Response create(SzerzesDto.Request dto) {
+        UUID irodaId = ctx.irodaIdOrThrow();
+
         Ajanlat ajanlat = ajanlatRepository.findById(dto.getAjanlatId());
-        if (ajanlat == null) throw new NotFoundException("Ajánlat nem található: " + dto.getAjanlatId());
+        if (ajanlat == null || !irodaId.equals(ajanlat.irodaId))
+            throw new NotFoundException("Ajánlat nem található: " + dto.getAjanlatId());
 
         if (ajanlat.status != Ajanlat.AjanlatStatus.ELFOGADOTT) {
             throw new BadRequestException("Szerzés csak elfogadott ajánlathoz rögzíthető.");
         }
-        if (repository.findByAjanlat(dto.getAjanlatId()).isPresent()) {
+        if (repository.findByAjanlatAndIroda(dto.getAjanlatId(), irodaId).isPresent()) {
             throw new BadRequestException("Ehhez az ajánlathoz már van rögzített szerzés.");
         }
 
         Szerzes sz = new Szerzes();
+        sz.irodaId = irodaId;
         sz.ajanlat = ajanlat;
         applyDto(sz, dto);
         repository.persist(sz);
@@ -88,6 +89,9 @@ public class SzerzesService {
     private Szerzes getOrThrow(UUID id) {
         Szerzes sz = repository.findById(id);
         if (sz == null) throw new NotFoundException("Szerzés nem található: " + id);
+        UUID irodaId = ctx.irodaId();
+        if (irodaId != null && !irodaId.equals(sz.irodaId))
+            throw new NotFoundException("Szerzés nem található: " + id);
         return sz;
     }
 

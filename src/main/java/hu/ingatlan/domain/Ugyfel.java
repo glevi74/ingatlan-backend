@@ -43,6 +43,9 @@ public class Ugyfel extends PanacheEntityBase {
     @Column(name = "gdpr_beleegyezes")
     public LocalDate gdprBeleegyezes;
 
+    @Column(name = "iroda_id", nullable = false, columnDefinition = "uuid")
+    public UUID irodaId;
+
     @CreationTimestamp
     @Column(name = "letrehozva", updatable = false)
     public LocalDateTime letrehozva;

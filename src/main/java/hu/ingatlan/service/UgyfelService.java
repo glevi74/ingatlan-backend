@@ -20,8 +20,11 @@ public class UgyfelService {
     @Inject
     UgyfelRepository repository;
 
+    @Inject
+    IrodaContext ctx;
+
     public List<UgyfelDto.Response> listAll() {
-        return repository.listAll().stream()
+        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -32,12 +35,14 @@ public class UgyfelService {
 
     @Transactional
     public UgyfelDto.Response create(UgyfelDto.Request dto) {
-        if (repository.findByEmail(dto.getEmail()) != null) {
+        UUID irodaId = ctx.irodaIdOrThrow();
+        if (repository.findByEmailAndIroda(dto.getEmail(), irodaId) != null) {
             throw new WebApplicationException(
-                "Ez az e-mail cím már foglalt: " + dto.getEmail(),
+                "Ez az e-mail cím már foglalt ebben az irodában: " + dto.getEmail(),
                 Response.Status.CONFLICT);
         }
         Ugyfel ugyfel = new Ugyfel();
+        ugyfel.irodaId = irodaId;
         ugyfel.nev = dto.getNev();
         ugyfel.email = dto.getEmail();
         ugyfel.telefon = dto.getTelefon();
@@ -60,13 +65,16 @@ public class UgyfelService {
 
     @Transactional
     public void delete(UUID id) {
-        Ugyfel ugyfel = getOrThrow(id);
-        repository.delete(ugyfel);
+        repository.delete(getOrThrow(id));
     }
 
     private Ugyfel getOrThrow(UUID id) {
         Ugyfel ugyfel = repository.findById(id);
         if (ugyfel == null) throw new NotFoundException("Ügyfél nem található: " + id);
+        UUID irodaId = ctx.irodaId();
+        if (irodaId != null && !irodaId.equals(ugyfel.irodaId)) {
+            throw new NotFoundException("Ügyfél nem található: " + id);
+        }
         return ugyfel;
     }
 

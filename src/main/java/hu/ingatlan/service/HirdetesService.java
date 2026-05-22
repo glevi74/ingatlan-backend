@@ -17,28 +17,23 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class HirdetesService {
 
-    @Inject
-    HirdetesRepository repository;
-
-    @Inject
-    MegbizasRepository megbizasRepository;
+    @Inject HirdetesRepository repository;
+    @Inject MegbizasRepository megbizasRepository;
+    @Inject IrodaContext ctx;
 
     public List<HirdetesDto.Response> listAll() {
-        return repository.listAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<HirdetesDto.Response> listAktivak() {
-        return repository.findAktivak().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.findAktivakByIroda(ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<HirdetesDto.Response> findByMegbizas(UUID megbizasId) {
-        return repository.findByMegbizas(megbizasId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.findByMegbizasAndIroda(megbizasId, ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public HirdetesDto.Response findById(UUID id) {
@@ -47,10 +42,13 @@ public class HirdetesService {
 
     @Transactional
     public HirdetesDto.Response create(HirdetesDto.Request dto) {
+        UUID irodaId = ctx.irodaIdOrThrow();
         Megbizas megbizas = megbizasRepository.findById(dto.getMegbizasId());
-        if (megbizas == null) throw new NotFoundException("Megbízás nem található: " + dto.getMegbizasId());
+        if (megbizas == null || !irodaId.equals(megbizas.irodaId))
+            throw new NotFoundException("Megbízás nem található: " + dto.getMegbizasId());
 
         Hirdetes h = new Hirdetes();
+        h.irodaId = irodaId;
         h.megbizas = megbizas;
         applyDto(h, dto);
         repository.persist(h);
@@ -60,10 +58,12 @@ public class HirdetesService {
     @Transactional
     public HirdetesDto.Response update(UUID id, HirdetesDto.Request dto) {
         Hirdetes h = getOrThrow(id);
+        UUID irodaId = ctx.irodaIdOrThrow();
 
         if (!h.megbizas.id.equals(dto.getMegbizasId())) {
             Megbizas megbizas = megbizasRepository.findById(dto.getMegbizasId());
-            if (megbizas == null) throw new NotFoundException("Megbízás nem található: " + dto.getMegbizasId());
+            if (megbizas == null || !irodaId.equals(megbizas.irodaId))
+                throw new NotFoundException("Megbízás nem található: " + dto.getMegbizasId());
             h.megbizas = megbizas;
         }
         applyDto(h, dto);
@@ -99,6 +99,9 @@ public class HirdetesService {
     private Hirdetes getOrThrow(UUID id) {
         Hirdetes h = repository.findById(id);
         if (h == null) throw new NotFoundException("Hirdetés nem található: " + id);
+        UUID irodaId = ctx.irodaId();
+        if (irodaId != null && !irodaId.equals(h.irodaId))
+            throw new NotFoundException("Hirdetés nem található: " + id);
         return h;
     }
 
