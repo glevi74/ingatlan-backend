@@ -61,6 +61,10 @@ public class Ingatlan extends PanacheEntityBase {
     @Column(name = "leiras", columnDefinition = "TEXT")
     public String leiras;
 
+    /** Az iroda azonosítója – multitenancy szűrőkulcs */
+    @Column(name = "iroda_id", nullable = false, columnDefinition = "uuid")
+    public UUID irodaId;
+
     @CreationTimestamp
     @Column(name = "letrehozva", updatable = false)
     public LocalDateTime letrehozva;

@@ -50,6 +50,9 @@ public class Megbizas extends PanacheEntityBase {
     @Column(nullable = false)
     public MegbizasStatus status = MegbizasStatus.AKTIV;
 
+    @Column(name = "iroda_id", nullable = false, columnDefinition = "uuid")
+    public UUID irodaId;
+
     @CreationTimestamp
     @Column(name = "letrehozva", updatable = false)
     public LocalDateTime letrehozva;

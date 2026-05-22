@@ -12,16 +12,17 @@ import java.util.UUID;
 @ApplicationScoped
 public class IngatlanRepository implements PanacheRepositoryBase<Ingatlan, UUID> {
 
-    public List<Ingatlan> findByTipus(Ingatlan.IngatlanTipus tipus) {
-        return list("tipus", tipus);
+    public List<Ingatlan> listByIroda(UUID irodaId) {
+        return list("irodaId", Sort.by("letrehozva").descending(), irodaId);
     }
 
-    public List<Ingatlan> search(Ingatlan.IngatlanTipus tipus,
+    public List<Ingatlan> search(UUID irodaId,
+                                  Ingatlan.IngatlanTipus tipus,
                                   Double minAlapterulet,
                                   Double maxAlapterulet,
                                   Integer minSzobaszam) {
-        StringBuilder query = new StringBuilder("1=1");
-        Parameters params = new Parameters();
+        StringBuilder query = new StringBuilder("irodaId = :irodaId");
+        Parameters params = Parameters.with("irodaId", irodaId);
 
         if (tipus != null) {
             query.append(" AND tipus = :tipus");

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -32,6 +33,23 @@ public class Felhasznalo extends PanacheEntityBase {
     @Column(nullable = false)
     public FelhasznaloSzerep szerep;
 
+    /** null = ADMIN (rendszer-szintű, nem tartozik irodához) */
+    @Column(name = "iroda_id", columnDefinition = "uuid")
+    public UUID irodaId;
+
+    /** Megjelenítési teljes név */
+    @Column
+    public String nev;
+
+    @Column
+    public String email;
+
+    @Column
+    public String telefon;
+
+    @Column(name = "profilkep_url")
+    public String profilkepUrl;
+
     @Column(nullable = false)
     public boolean aktiv = true;
 
@@ -39,5 +57,18 @@ public class Felhasznalo extends PanacheEntityBase {
     @Column(name = "letrehozva", updatable = false)
     public LocalDateTime letrehozva;
 
-    public enum FelhasznaloSzerep { ADMIN, UGYNOK }
+    @UpdateTimestamp
+    @Column(name = "modositva")
+    public LocalDateTime modositva;
+
+    public enum FelhasznaloSzerep {
+        /** Rendszer-szintű adminisztrátor – irodákat kezel, globális hozzáférés */
+        ADMIN,
+        /** Irodavezető – saját iroda adatai + felhasználók létrehozása */
+        IRODAVEZETO,
+        /** Értékesítési referens – saját iroda összes adata */
+        REFERENS,
+        /** Irodai asszisztens – saját iroda összes adata */
+        ASSZISZTENS
+    }
 }

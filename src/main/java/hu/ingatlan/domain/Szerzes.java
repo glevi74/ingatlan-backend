@@ -40,6 +40,9 @@ public class Szerzes extends PanacheEntityBase {
     @Column(columnDefinition = "TEXT")
     public String megjegyzes;
 
+    @Column(name = "iroda_id", nullable = false, columnDefinition = "uuid")
+    public UUID irodaId;
+
     @CreationTimestamp
     @Column(name = "letrehozva", updatable = false)
     public LocalDateTime letrehozva;

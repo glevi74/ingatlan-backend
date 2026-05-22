@@ -58,7 +58,7 @@ class AuthResourceTest {
     void testRegisztracioNemElerheto_Hitelesites_Nelkul() {
         // Regisztrácio token nélkül → 401
         given().contentType(ContentType.JSON)
-                .body(Map.of("felhasznalonev", "ujfelhasznalo", "jelszo", "Jelszo123", "szerep", "UGYNOK"))
+                .body(Map.of("felhasznalonev", "ujfelhasznalo", "jelszo", "Jelszo123", "szerep", "REFERENS"))
                 .when().post(REGISZTRACIO)
                 .then().statusCode(401);
     }
@@ -66,30 +66,31 @@ class AuthResourceTest {
     @Test
     @TestSecurity(user = "admin", roles = {"ADMIN"})
     void testRegisztracioAdmin() {
+        // ADMIN létrehozhat másik ADMIN-t (irodaId nélkül)
         given().contentType(ContentType.JSON)
                 .body(Map.of(
-                        "felhasznalonev", "uj.ugynok.teszt",
+                        "felhasznalonev", "uj.admin.teszt",
                         "jelszo", "Jelszo123",
-                        "szerep", "UGYNOK"))
+                        "szerep", "ADMIN"))
                 .when().post(REGISZTRACIO)
                 .then().statusCode(201);
 
         // Duplikált felhasználónév → 409
         given().contentType(ContentType.JSON)
                 .body(Map.of(
-                        "felhasznalonev", "uj.ugynok.teszt",
+                        "felhasznalonev", "uj.admin.teszt",
                         "jelszo", "MasikJelszo123",
-                        "szerep", "UGYNOK"))
+                        "szerep", "ADMIN"))
                 .when().post(REGISZTRACIO)
                 .then().statusCode(409);
     }
 
     @Test
-    @TestSecurity(user = "ugynok", roles = {"UGYNOK"})
-    void testRegisztracioTiltottUgynoknek() {
-        // UGYNOK szerepkörrel regisztrálás → 403
+    @TestSecurity(user = "referens", roles = {"REFERENS"})
+    void testRegisztracioTiltottReferensnek() {
+        // REFERENS szerepkörrel regisztrálás → 403
         given().contentType(ContentType.JSON)
-                .body(Map.of("felhasznalonev", "nemszabad", "jelszo", "Jelszo123", "szerep", "UGYNOK"))
+                .body(Map.of("felhasznalonev", "nemszabad", "jelszo", "Jelszo123", "szerep", "REFERENS"))
                 .when().post(REGISZTRACIO)
                 .then().statusCode(403);
     }

@@ -20,31 +20,24 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class AjanlatService {
 
-    @Inject
-    AjanlatRepository repository;
-
-    @Inject
-    MegbizasRepository megbizasRepository;
-
-    @Inject
-    UgyfelRepository ugyfelRepository;
+    @Inject AjanlatRepository repository;
+    @Inject MegbizasRepository megbizasRepository;
+    @Inject UgyfelRepository ugyfelRepository;
+    @Inject IrodaContext ctx;
 
     public List<AjanlatDto.Response> listAll() {
-        return repository.listAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<AjanlatDto.Response> findByMegbizas(UUID megbizasId) {
-        return repository.findByMegbizas(megbizasId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.findByMegbizasAndIroda(megbizasId, ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<AjanlatDto.Response> findByUgyfel(UUID ugyfelId) {
-        return repository.findByUgyfel(ugyfelId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return repository.findByUgyfelAndIroda(ugyfelId, ctx.irodaIdOrThrow()).stream()
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public AjanlatDto.Response findById(UUID id) {
@@ -53,13 +46,18 @@ public class AjanlatService {
 
     @Transactional
     public AjanlatDto.Response create(AjanlatDto.Request dto) {
+        UUID irodaId = ctx.irodaIdOrThrow();
+
         Megbizas megbizas = megbizasRepository.findById(dto.getMegbizasId());
-        if (megbizas == null) throw new NotFoundException("Megbízás nem található: " + dto.getMegbizasId());
+        if (megbizas == null || !irodaId.equals(megbizas.irodaId))
+            throw new NotFoundException("Megbízás nem található: " + dto.getMegbizasId());
 
         Ugyfel ugyfel = ugyfelRepository.findById(dto.getUgyfelId());
-        if (ugyfel == null) throw new NotFoundException("Ügyfél nem található: " + dto.getUgyfelId());
+        if (ugyfel == null || !irodaId.equals(ugyfel.irodaId))
+            throw new NotFoundException("Ügyfél nem található: " + dto.getUgyfelId());
 
         Ajanlat a = new Ajanlat();
+        a.irodaId = irodaId;
         a.megbizas = megbizas;
         a.ugyfel = ugyfel;
         applyDto(a, dto);
@@ -70,15 +68,18 @@ public class AjanlatService {
     @Transactional
     public AjanlatDto.Response update(UUID id, AjanlatDto.Request dto) {
         Ajanlat a = getOrThrow(id);
+        UUID irodaId = ctx.irodaIdOrThrow();
 
         if (!a.megbizas.id.equals(dto.getMegbizasId())) {
             Megbizas megbizas = megbizasRepository.findById(dto.getMegbizasId());
-            if (megbizas == null) throw new NotFoundException("Megbízás nem található: " + dto.getMegbizasId());
+            if (megbizas == null || !irodaId.equals(megbizas.irodaId))
+                throw new NotFoundException("Megbízás nem található: " + dto.getMegbizasId());
             a.megbizas = megbizas;
         }
         if (!a.ugyfel.id.equals(dto.getUgyfelId())) {
             Ugyfel ugyfel = ugyfelRepository.findById(dto.getUgyfelId());
-            if (ugyfel == null) throw new NotFoundException("Ügyfél nem található: " + dto.getUgyfelId());
+            if (ugyfel == null || !irodaId.equals(ugyfel.irodaId))
+                throw new NotFoundException("Ügyfél nem található: " + dto.getUgyfelId());
             a.ugyfel = ugyfel;
         }
         applyDto(a, dto);
@@ -107,7 +108,7 @@ public class AjanlatService {
         }
 
         // A többi ajánlat elutasítása ugyanarra a megbízásra
-        repository.findByMegbizas(elfogadott.megbizas.id).stream()
+        repository.findByMegbizasAndIroda(elfogadott.megbizas.id, ctx.irodaIdOrThrow()).stream()
                 .filter(a -> !a.id.equals(id))
                 .filter(a -> a.status == Ajanlat.AjanlatStatus.BEERKEZETT
                         || a.status == Ajanlat.AjanlatStatus.TARGYALASBAN)
@@ -133,6 +134,9 @@ public class AjanlatService {
     private Ajanlat getOrThrow(UUID id) {
         Ajanlat a = repository.findById(id);
         if (a == null) throw new NotFoundException("Ajánlat nem található: " + id);
+        UUID irodaId = ctx.irodaId();
+        if (irodaId != null && !irodaId.equals(a.irodaId))
+            throw new NotFoundException("Ajánlat nem található: " + id);
         return a;
     }
 

@@ -43,6 +43,9 @@ public class Hirdetes extends PanacheEntityBase {
     @Column(name = "megtekintesek")
     public Integer megtekintesek = 0;
 
+    @Column(name = "iroda_id", nullable = false, columnDefinition = "uuid")
+    public UUID irodaId;
+
     @CreationTimestamp
     @Column(name = "letrehozva", updatable = false)
     public LocalDateTime letrehozva;
