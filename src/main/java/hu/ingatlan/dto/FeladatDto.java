@@ -24,6 +24,9 @@ public class FeladatDto {
 
         /** A feladathoz rendelt felhasználó UUID-ja (opcionális) */
         public UUID hozzarendeltId;
+
+        /** ADMIN felhasználó esetén kötelező: melyik iroda feladataként kell létrehozni */
+        public UUID irodaId;
     }
 
     @Data

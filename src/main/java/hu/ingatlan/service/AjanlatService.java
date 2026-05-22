@@ -26,16 +26,28 @@ public class AjanlatService {
     @Inject IrodaContext ctx;
 
     public List<AjanlatDto.Response> listAll() {
+        if (ctx.isAdmin()) {
+            return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<AjanlatDto.Response> findByMegbizas(UUID megbizasId) {
+        if (ctx.isAdmin()) {
+            return repository.findByMegbizas(megbizasId).stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.findByMegbizasAndIroda(megbizasId, ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<AjanlatDto.Response> findByUgyfel(UUID ugyfelId) {
+        if (ctx.isAdmin()) {
+            return repository.findByUgyfel(ugyfelId).stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.findByUgyfelAndIroda(ugyfelId, ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
@@ -68,7 +80,8 @@ public class AjanlatService {
     @Transactional
     public AjanlatDto.Response update(UUID id, AjanlatDto.Request dto) {
         Ajanlat a = getOrThrow(id);
-        UUID irodaId = ctx.irodaIdOrThrow();
+        // ADMIN esetén az entitás saját irodaId-ját használjuk az ellenőrzéshez
+        UUID irodaId = ctx.isAdmin() ? a.irodaId : ctx.irodaIdOrThrow();
 
         if (!a.megbizas.id.equals(dto.getMegbizasId())) {
             Megbizas megbizas = megbizasRepository.findById(dto.getMegbizasId());
@@ -108,7 +121,10 @@ public class AjanlatService {
         }
 
         // A többi ajánlat elutasítása ugyanarra a megbízásra
-        repository.findByMegbizasAndIroda(elfogadott.megbizas.id, ctx.irodaIdOrThrow()).stream()
+        (ctx.isAdmin()
+            ? repository.findByMegbizas(elfogadott.megbizas.id)
+            : repository.findByMegbizasAndIroda(elfogadott.megbizas.id, ctx.irodaIdOrThrow())
+        ).stream()
                 .filter(a -> !a.id.equals(id))
                 .filter(a -> a.status == Ajanlat.AjanlatStatus.BEERKEZETT
                         || a.status == Ajanlat.AjanlatStatus.TARGYALASBAN)

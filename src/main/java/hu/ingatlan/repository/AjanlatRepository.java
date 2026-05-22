@@ -25,4 +25,13 @@ public class AjanlatRepository implements PanacheRepositoryBase<Ajanlat, UUID> {
         return list("ugyfel.id = :ugyfelId AND irodaId = :irodaId",
                 Parameters.with("ugyfelId", ugyfelId).and("irodaId", irodaId));
     }
+
+    // ADMIN-variánsok: iroda-szűrés nélkül
+    public List<Ajanlat> findByMegbizas(UUID megbizasId) {
+        return list("megbizas.id", megbizasId);
+    }
+
+    public List<Ajanlat> findByUgyfel(UUID ugyfelId) {
+        return list("ugyfel.id", ugyfelId);
+    }
 }

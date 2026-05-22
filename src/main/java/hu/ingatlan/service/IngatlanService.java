@@ -22,14 +22,20 @@ public class IngatlanService {
     IrodaContext ctx;
 
     public List<IngatlanDto.Response> listAll() {
+        if (ctx.isAdmin()) {
+            return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     public List<IngatlanDto.Response> search(IngatlanDto.SearchParams params) {
+        // ADMIN esetén nincs iroda-szűrés (null átadva)
+        UUID irodaId = ctx.isAdmin() ? null : ctx.irodaIdOrThrow();
         return repository.search(
-                ctx.irodaIdOrThrow(),
+                irodaId,
                 params.getTipus(),
                 params.getMinAlapterulet(),
                 params.getMaxAlapterulet(),

@@ -21,26 +21,35 @@ public class IngatlanRepository implements PanacheRepositoryBase<Ingatlan, UUID>
                                   Double minAlapterulet,
                                   Double maxAlapterulet,
                                   Integer minSzobaszam) {
-        StringBuilder query = new StringBuilder("irodaId = :irodaId");
-        Parameters params = Parameters.with("irodaId", irodaId);
+        StringBuilder query = new StringBuilder();
+        Parameters params = new Parameters();
 
+        if (irodaId != null) {
+            query.append("irodaId = :irodaId");
+            params.and("irodaId", irodaId);
+        }
         if (tipus != null) {
-            query.append(" AND tipus = :tipus");
+            if (!query.isEmpty()) query.append(" AND ");
+            query.append("tipus = :tipus");
             params.and("tipus", tipus);
         }
         if (minAlapterulet != null) {
-            query.append(" AND alapterulet >= :minAlapterulet");
+            if (!query.isEmpty()) query.append(" AND ");
+            query.append("alapterulet >= :minAlapterulet");
             params.and("minAlapterulet", minAlapterulet);
         }
         if (maxAlapterulet != null) {
-            query.append(" AND alapterulet <= :maxAlapterulet");
+            if (!query.isEmpty()) query.append(" AND ");
+            query.append("alapterulet <= :maxAlapterulet");
             params.and("maxAlapterulet", maxAlapterulet);
         }
         if (minSzobaszam != null) {
-            query.append(" AND szobaszam >= :minSzobaszam");
+            if (!query.isEmpty()) query.append(" AND ");
+            query.append("szobaszam >= :minSzobaszam");
             params.and("minSzobaszam", minSzobaszam);
         }
 
-        return list(query.toString(), Sort.by("letrehozva").descending(), params);
+        String q = query.isEmpty() ? "1=1" : query.toString();
+        return list(q, Sort.by("letrehozva").descending(), params);
     }
 }

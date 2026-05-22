@@ -22,16 +22,28 @@ public class HirdetesService {
     @Inject IrodaContext ctx;
 
     public List<HirdetesDto.Response> listAll() {
+        if (ctx.isAdmin()) {
+            return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<HirdetesDto.Response> listAktivak() {
+        if (ctx.isAdmin()) {
+            return repository.findAktivak().stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.findAktivakByIroda(ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<HirdetesDto.Response> findByMegbizas(UUID megbizasId) {
+        if (ctx.isAdmin()) {
+            return repository.findByMegbizas(megbizasId).stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.findByMegbizasAndIroda(megbizasId, ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
@@ -58,7 +70,8 @@ public class HirdetesService {
     @Transactional
     public HirdetesDto.Response update(UUID id, HirdetesDto.Request dto) {
         Hirdetes h = getOrThrow(id);
-        UUID irodaId = ctx.irodaIdOrThrow();
+        // ADMIN esetén az entitás saját irodaId-ját használjuk az ellenőrzéshez
+        UUID irodaId = ctx.isAdmin() ? h.irodaId : ctx.irodaIdOrThrow();
 
         if (!h.megbizas.id.equals(dto.getMegbizasId())) {
             Megbizas megbizas = megbizasRepository.findById(dto.getMegbizasId());

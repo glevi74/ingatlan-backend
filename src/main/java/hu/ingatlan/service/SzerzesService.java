@@ -23,6 +23,10 @@ public class SzerzesService {
     @Inject IrodaContext ctx;
 
     public List<SzerzesDto.Response> listAll() {
+        if (ctx.isAdmin()) {
+            return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
@@ -32,6 +36,11 @@ public class SzerzesService {
     }
 
     public SzerzesDto.Response findByAjanlat(UUID ajanlatId) {
+        if (ctx.isAdmin()) {
+            return repository.findByAjanlat(ajanlatId)
+                    .map(this::toResponse)
+                    .orElseThrow(() -> new NotFoundException("Szerzés nem található ehhez az ajánlathoz: " + ajanlatId));
+        }
         return repository.findByAjanlatAndIroda(ajanlatId, ctx.irodaIdOrThrow())
                 .map(this::toResponse)
                 .orElseThrow(() -> new NotFoundException("Szerzés nem található ehhez az ajánlathoz: " + ajanlatId));

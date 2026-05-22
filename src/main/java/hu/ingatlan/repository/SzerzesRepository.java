@@ -22,4 +22,9 @@ public class SzerzesRepository implements PanacheRepositoryBase<Szerzes, UUID> {
                 Parameters.with("ajanlatId", ajanlatId).and("irodaId", irodaId))
                 .firstResultOptional();
     }
+
+    // ADMIN-variáns: iroda-szűrés nélkül
+    public Optional<Szerzes> findByAjanlat(UUID ajanlatId) {
+        return find("ajanlat.id", ajanlatId).firstResultOptional();
+    }
 }

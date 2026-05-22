@@ -24,6 +24,10 @@ public class UgyfelService {
     IrodaContext ctx;
 
     public List<UgyfelDto.Response> listAll() {
+        if (ctx.isAdmin()) {
+            return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());

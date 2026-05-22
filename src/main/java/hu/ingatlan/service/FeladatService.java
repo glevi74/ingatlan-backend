@@ -22,15 +22,26 @@ public class FeladatService {
     @Inject IrodaContext ctx;
 
     public List<FeladatDto.Response> listAll(Feladat.FeladatStatus status, UUID hozzarendeltId) {
-        UUID irodaId = ctx.irodaIdOrThrow();
         List<Feladat> feladatok;
 
-        if (status != null) {
-            feladatok = repository.listByIrodaAndStatus(irodaId, status);
-        } else if (hozzarendeltId != null) {
-            feladatok = repository.listByIrodaAndHozzarendelt(irodaId, hozzarendeltId);
+        if (ctx.isAdmin()) {
+            // ADMIN: minden iroda feladatát látja, de status/hozzarendelt szűrés megmarad
+            if (status != null) {
+                feladatok = repository.list("status", status);
+            } else if (hozzarendeltId != null) {
+                feladatok = repository.list("hozzarendeltId", hozzarendeltId);
+            } else {
+                feladatok = repository.listAll();
+            }
         } else {
-            feladatok = repository.listByIroda(irodaId);
+            UUID irodaId = ctx.irodaIdOrThrow();
+            if (status != null) {
+                feladatok = repository.listByIrodaAndStatus(irodaId, status);
+            } else if (hozzarendeltId != null) {
+                feladatok = repository.listByIrodaAndHozzarendelt(irodaId, hozzarendeltId);
+            } else {
+                feladatok = repository.listByIroda(irodaId);
+            }
         }
 
         return feladatok.stream().map(this::toResponse).collect(Collectors.toList());
@@ -42,7 +53,16 @@ public class FeladatService {
 
     @Transactional
     public FeladatDto.Response create(FeladatDto.Request dto) {
-        UUID irodaId = ctx.irodaIdOrThrow();
+        UUID irodaId;
+        if (ctx.isAdmin()) {
+            if (dto.getIrodaId() == null) {
+                throw new jakarta.ws.rs.BadRequestException(
+                        "ADMIN felhasználónak meg kell adnia az irodaId mezőt feladat létrehozásához.");
+            }
+            irodaId = dto.getIrodaId();
+        } else {
+            irodaId = ctx.irodaIdOrThrow();
+        }
         Feladat f = new Feladat();
         f.irodaId = irodaId;
         f.letrehozoId = ctx.felhasznaloId();
@@ -93,7 +113,9 @@ public class FeladatService {
     private Feladat getOrThrow(UUID id) {
         Feladat f = repository.findById(id);
         if (f == null) throw new NotFoundException("Feladat nem található: " + id);
-        if (!ctx.irodaIdOrThrow().equals(f.irodaId)) {
+        // ADMIN minden irodát lát; nem-ADMIN csak a sajátját
+        UUID irodaId = ctx.irodaId();
+        if (irodaId != null && !irodaId.equals(f.irodaId)) {
             throw new NotFoundException("Feladat nem található: " + id);
         }
         return f;

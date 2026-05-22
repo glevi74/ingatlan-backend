@@ -25,21 +25,37 @@ public class MegbizasService {
     @Inject IrodaContext ctx;
 
     public List<MegbizasDto.Response> listAll() {
+        if (ctx.isAdmin()) {
+            return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> listAktivak() {
+        if (ctx.isAdmin()) {
+            return repository.findAktivak().stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.findAktivakByIroda(ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> findByUgyfel(UUID ugyfelId) {
+        if (ctx.isAdmin()) {
+            return repository.findByUgyfel(ugyfelId).stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.findByUgyfelAndIroda(ugyfelId, ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> findByIngatlan(UUID ingatlanId) {
+        if (ctx.isAdmin()) {
+            return repository.findByIngatlan(ingatlanId).stream()
+                    .map(this::toResponse).collect(Collectors.toList());
+        }
         return repository.findByIngatlanAndIroda(ingatlanId, ctx.irodaIdOrThrow()).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
@@ -72,7 +88,8 @@ public class MegbizasService {
     @Transactional
     public MegbizasDto.Response update(UUID id, MegbizasDto.Request dto) {
         Megbizas m = getOrThrow(id);
-        UUID irodaId = ctx.irodaIdOrThrow();
+        // ADMIN esetén az entitás saját irodaId-ját használjuk az ellenőrzéshez
+        UUID irodaId = ctx.isAdmin() ? m.irodaId : ctx.irodaIdOrThrow();
 
         if (!m.ugyfel.id.equals(dto.getUgyfelId())) {
             Ugyfel ugyfel = ugyfelRepository.findById(dto.getUgyfelId());
