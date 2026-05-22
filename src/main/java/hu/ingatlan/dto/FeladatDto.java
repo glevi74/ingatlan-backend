@@ -27,6 +27,11 @@ public class FeladatDto {
 
         /** ADMIN felhasználó esetén kötelező: melyik iroda feladataként kell létrehozni */
         public UUID irodaId;
+
+        /** Opcionális entitás-hivatkozás */
+        public Feladat.KapcsoltTipus kapcsoltTipus;
+        public UUID kapcsoltId;
+        public String kapcsoltNev;
     }
 
     @Data
@@ -47,5 +52,9 @@ public class FeladatDto {
         public UUID irodaId;
         public LocalDateTime letrehozva;
         public LocalDateTime modositva;
+
+        public Feladat.KapcsoltTipus kapcsoltTipus;
+        public UUID kapcsoltId;
+        public String kapcsoltNev;
     }
 }

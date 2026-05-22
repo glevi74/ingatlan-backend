@@ -29,6 +29,7 @@ public class MegbizasDto {
     @Data
     public static class Response {
         public UUID id;
+        public UUID irodaId;
         public UUID ugyfelId;
         public String ugyfelNev;
         public UUID ingatlanId;

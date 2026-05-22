@@ -24,11 +24,12 @@ public class UgyfelService {
     IrodaContext ctx;
 
     public List<UgyfelDto.Response> listAll() {
-        if (ctx.isAdmin()) {
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
             return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
                     .stream().map(this::toResponse).collect(Collectors.toList());
         }
-        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
+        return repository.listByIroda(irodaId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -85,6 +86,7 @@ public class UgyfelService {
     private UgyfelDto.Response toResponse(Ugyfel u) {
         UgyfelDto.Response r = new UgyfelDto.Response();
         r.setId(u.id);
+        r.setIrodaId(u.irodaId);
         r.setNev(u.nev);
         r.setEmail(u.email);
         r.setTelefon(u.telefon);

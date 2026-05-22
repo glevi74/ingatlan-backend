@@ -42,6 +42,8 @@ public class AuthDto {
     @Data
     public static class TokenResponse {
         public String token;
+        /** A bejelentkezett felhasználó UUID-ja */
+        public UUID id;
         public String felhasznalonev;
         public String nev;
         public Felhasznalo.FelhasznaloSzerep szerep;

@@ -24,8 +24,9 @@ public class FeladatService {
     public List<FeladatDto.Response> listAll(Feladat.FeladatStatus status, UUID hozzarendeltId) {
         List<Feladat> feladatok;
 
-        if (ctx.isAdmin()) {
-            // ADMIN: minden iroda feladatát látja, de status/hozzarendelt szűrés megmarad
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
+            // Nincs iroda-szűrés (ADMIN iroda választás nélkül)
             if (status != null) {
                 feladatok = repository.list("status", status);
             } else if (hozzarendeltId != null) {
@@ -34,7 +35,6 @@ public class FeladatService {
                 feladatok = repository.listAll();
             }
         } else {
-            UUID irodaId = ctx.irodaIdOrThrow();
             if (status != null) {
                 feladatok = repository.listByIrodaAndStatus(irodaId, status);
             } else if (hozzarendeltId != null) {
@@ -53,15 +53,15 @@ public class FeladatService {
 
     @Transactional
     public FeladatDto.Response create(FeladatDto.Request dto) {
-        UUID irodaId;
-        if (ctx.isAdmin()) {
+        // Ha van iroda kontextus (JWT vagy X-Iroda-Id fejléc), azt használjuk.
+        // Ha nincs (ADMIN iroda választás nélkül), a dto.irodaId mezőből vesszük.
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
             if (dto.getIrodaId() == null) {
                 throw new jakarta.ws.rs.BadRequestException(
                         "ADMIN felhasználónak meg kell adnia az irodaId mezőt feladat létrehozásához.");
             }
             irodaId = dto.getIrodaId();
-        } else {
-            irodaId = ctx.irodaIdOrThrow();
         }
         Feladat f = new Feladat();
         f.irodaId = irodaId;
@@ -108,6 +108,11 @@ public class FeladatService {
         } else {
             f.hozzarendeltId = null;
         }
+
+        // Kapcsolt entitás hivatkozás
+        f.kapcsoltTipus = dto.getKapcsoltTipus();
+        f.kapcsoltId    = dto.getKapcsoltId();
+        f.kapcsoltNev   = dto.getKapcsoltNev();
     }
 
     private Feladat getOrThrow(UUID id) {
@@ -143,6 +148,9 @@ public class FeladatService {
             Felhasznalo l = felhasznaloRepository.findById(f.letrehozoId);
             if (l != null) r.setLetrehozoNev(l.nev != null ? l.nev : l.felhasznalonev);
         }
+        r.setKapcsoltTipus(f.kapcsoltTipus);
+        r.setKapcsoltId(f.kapcsoltId);
+        r.setKapcsoltNev(f.kapcsoltNev);
         return r;
     }
 }

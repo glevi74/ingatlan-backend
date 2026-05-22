@@ -25,38 +25,42 @@ public class MegbizasService {
     @Inject IrodaContext ctx;
 
     public List<MegbizasDto.Response> listAll() {
-        if (ctx.isAdmin()) {
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
             return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
                     .stream().map(this::toResponse).collect(Collectors.toList());
         }
-        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
+        return repository.listByIroda(irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> listAktivak() {
-        if (ctx.isAdmin()) {
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
             return repository.findAktivak().stream()
                     .map(this::toResponse).collect(Collectors.toList());
         }
-        return repository.findAktivakByIroda(ctx.irodaIdOrThrow()).stream()
+        return repository.findAktivakByIroda(irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> findByUgyfel(UUID ugyfelId) {
-        if (ctx.isAdmin()) {
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
             return repository.findByUgyfel(ugyfelId).stream()
                     .map(this::toResponse).collect(Collectors.toList());
         }
-        return repository.findByUgyfelAndIroda(ugyfelId, ctx.irodaIdOrThrow()).stream()
+        return repository.findByUgyfelAndIroda(ugyfelId, irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<MegbizasDto.Response> findByIngatlan(UUID ingatlanId) {
-        if (ctx.isAdmin()) {
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
             return repository.findByIngatlan(ingatlanId).stream()
                     .map(this::toResponse).collect(Collectors.toList());
         }
-        return repository.findByIngatlanAndIroda(ingatlanId, ctx.irodaIdOrThrow()).stream()
+        return repository.findByIngatlanAndIroda(ingatlanId, irodaId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
@@ -88,8 +92,7 @@ public class MegbizasService {
     @Transactional
     public MegbizasDto.Response update(UUID id, MegbizasDto.Request dto) {
         Megbizas m = getOrThrow(id);
-        // ADMIN esetén az entitás saját irodaId-ját használjuk az ellenőrzéshez
-        UUID irodaId = ctx.isAdmin() ? m.irodaId : ctx.irodaIdOrThrow();
+        UUID irodaId = ctx.irodaId() != null ? ctx.irodaId() : m.irodaId;
 
         if (!m.ugyfel.id.equals(dto.getUgyfelId())) {
             Ugyfel ugyfel = ugyfelRepository.findById(dto.getUgyfelId());
@@ -138,6 +141,7 @@ public class MegbizasService {
     private MegbizasDto.Response toResponse(Megbizas m) {
         MegbizasDto.Response r = new MegbizasDto.Response();
         r.setId(m.id);
+        r.setIrodaId(m.irodaId);
         r.setUgyfelId(m.ugyfel.id);
         r.setUgyfelNev(m.ugyfel.nev);
         r.setIngatlanId(m.ingatlan.id);

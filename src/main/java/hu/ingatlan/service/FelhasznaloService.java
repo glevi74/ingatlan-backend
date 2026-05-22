@@ -28,11 +28,12 @@ public class FelhasznaloService {
      * IRODAVEZETO/REFERENS/ASSZISZTENS: csak a saját iroda felhasználóit.
      */
     public List<FelhasznaloDto.Response> listAll() {
-        if (ctx.isAdmin()) {
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
             return repository.listAll(Sort.by("letrehozva").descending())
                     .stream().map(this::toResponse).collect(Collectors.toList());
         }
-        return repository.listByIroda(ctx.irodaIdOrThrow())
+        return repository.listByIroda(irodaId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
     }
 
@@ -70,8 +71,9 @@ public class FelhasznaloService {
     private Felhasznalo getOrThrow(UUID id) {
         Felhasznalo f = repository.findById(id);
         if (f == null) throw new NotFoundException("Felhasználó nem található: " + id);
-        // Bérlő-ellenőrzés: nem ADMIN láthat csak saját iroda felhasználóit
-        if (!ctx.isAdmin() && !ctx.irodaIdOrThrow().equals(f.irodaId)) {
+        // Iroda-ellenőrzés: ha van iroda kontextus, csak azt az irodát láthatja
+        UUID irodaId = ctx.irodaId();
+        if (irodaId != null && !irodaId.equals(f.irodaId)) {
             throw new NotFoundException("Felhasználó nem található: " + id);
         }
         return f;

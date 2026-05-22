@@ -113,6 +113,12 @@
             <version>0.10.2</version>
         </dependency>
 
+        <!-- Ütemező (napi hírgeneráláshoz) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+
         <!-- Tesztelés -->
         <dependency>
             <groupId>io.quarkus</groupId>

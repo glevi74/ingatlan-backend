@@ -25,6 +25,7 @@ public class DataInitializer {
     @Transactional
     public void onStart(@Observes StartupEvent ev) {
         fixSzerepConstraint();
+        fixHelyrajziSzamEmpty();
         initIroda();
         initAdmin();
     }
@@ -42,6 +43,24 @@ public class DataInitializer {
             LOG.debug("felhasznalok_szerep_check constraint eltávolítva (ha létezett).");
         } catch (Exception ex) {
             LOG.warnf("Nem sikerült törölni a szerep CHECK constraint-et: %s", ex.getMessage());
+        }
+    }
+
+    /**
+     * Korábbi verziókban az üres cím ("") helyrajzi_szam-ként kerülhetett a DB-be.
+     * PostgreSQL a UNIQUE constraint-nél az üres stringet értékként kezeli → duplikált sorokat blokkol.
+     * Induláskor az üres stringeket NULL-ra alakítjuk.
+     */
+    private void fixHelyrajziSzamEmpty() {
+        try {
+            int updated = em.createNativeQuery(
+                    "UPDATE ingatlanok SET helyrajzi_szam = NULL WHERE helyrajzi_szam = ''"
+            ).executeUpdate();
+            if (updated > 0) {
+                LOG.infof("fixHelyrajziSzam: %d sor helyrajzi_szam mezője NULL-ra javítva.", updated);
+            }
+        } catch (Exception ex) {
+            LOG.warnf("fixHelyrajziSzam: nem sikerült: %s", ex.getMessage());
         }
     }
 

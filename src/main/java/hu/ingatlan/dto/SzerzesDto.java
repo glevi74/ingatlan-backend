@@ -26,6 +26,7 @@ public class SzerzesDto {
     @Data
     public static class Response {
         public UUID id;
+        public UUID irodaId;
         public UUID ajanlatId;
         public String ingatlanCim;
         public UUID ugyfelId;

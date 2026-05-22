@@ -22,18 +22,19 @@ public class IngatlanService {
     IrodaContext ctx;
 
     public List<IngatlanDto.Response> listAll() {
-        if (ctx.isAdmin()) {
+        UUID irodaId = ctx.irodaId();
+        if (irodaId == null) {
             return repository.listAll(io.quarkus.panache.common.Sort.by("letrehozva").descending())
                     .stream().map(this::toResponse).collect(Collectors.toList());
         }
-        return repository.listByIroda(ctx.irodaIdOrThrow()).stream()
+        return repository.listByIroda(irodaId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     public List<IngatlanDto.Response> search(IngatlanDto.SearchParams params) {
-        // ADMIN esetén nincs iroda-szűrés (null átadva)
-        UUID irodaId = ctx.isAdmin() ? null : ctx.irodaIdOrThrow();
+        // null = nincs iroda-szűrés (ADMIN iroda választás nélkül)
+        UUID irodaId = ctx.irodaId();
         return repository.search(
                 irodaId,
                 params.getTipus(),
@@ -70,16 +71,22 @@ public class IngatlanService {
 
     private void applyDto(Ingatlan i, IngatlanDto.Request dto) {
         i.cim = dto.getCim();
-        i.helyrajziSzam = dto.getHelyrajziSzam();
+        // Üres string → null: a UNIQUE constraint PostgreSQL-ben megengedi a több NULL-t,
+        // de az üres stringet egyedi értékként kezeli → duplikált üres stringek 500-at okoznának.
+        i.helyrajziSzam = blankToNull(dto.getHelyrajziSzam());
         i.tipus = dto.getTipus();
         i.alapterulet = dto.getAlapterulet();
         i.telekterulet = dto.getTelekterulet();
         i.szobaszam = dto.getSzobaszam();
         i.emelet = dto.getEmelet();
         i.allapot = dto.getAllapot();
-        i.energetikaiOsztaly = dto.getEnergetikaiOsztaly();
-        i.jogiStatus = dto.getJogiStatus();
-        i.leiras = dto.getLeiras();
+        i.energetikaiOsztaly = blankToNull(dto.getEnergetikaiOsztaly());
+        i.jogiStatus = blankToNull(dto.getJogiStatus());
+        i.leiras = blankToNull(dto.getLeiras());
+    }
+
+    private static String blankToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
     }
 
     private Ingatlan getOrThrow(UUID id) {
@@ -96,6 +103,7 @@ public class IngatlanService {
     private IngatlanDto.Response toResponse(Ingatlan i) {
         IngatlanDto.Response r = new IngatlanDto.Response();
         r.setId(i.id);
+        r.setIrodaId(i.irodaId);
         r.setCim(i.cim);
         r.setHelyrajziSzam(i.helyrajziSzam);
         r.setTipus(i.tipus);
